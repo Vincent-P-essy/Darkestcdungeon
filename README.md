@@ -1,6 +1,7 @@
 # DarkestDungeon
 
 Jeu vidéo en C où des personnages s'affrontent en tour par tour jusqu'à atteindre le donjon final.
+Voir rapport PDF pour plus de détails .
 
 ##  Fonctionnalités
 
