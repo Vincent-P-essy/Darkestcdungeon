@@ -1,0 +1,9 @@
+$ ./game
+
+=== Darkest C Dungeon ===
+1. Nouveau jeu
+2. Charger une partie
+3. Quitter
+Choix : Au revoir!
+
+Exit: 0

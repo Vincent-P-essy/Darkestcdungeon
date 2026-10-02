@@ -1,0 +1,7 @@
+[
+  {
+    "command": "./game",
+    "exit": 0,
+    "output": "\n=== Darkest C Dungeon ===\n1. Nouveau jeu\n2. Charger une partie\n3. Quitter\nChoix : Au revoir!\n"
+  }
+]

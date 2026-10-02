@@ -4,6 +4,12 @@ Jeu vidéo en C où des personnages s'affrontent en tour par tour jusqu'à attei
 
 Voir rapport PDF pour plus de détails .
 
+## Execution preview
+
+![Darkestcdungeon execution](docs/screenshots/execution.png)
+
+Local execution of `./game`. The input and output shown come from the repository example or test fixtures. [Verification](docs/verification.md).
+
 ##  Fonctionnalités
 
 - Gestion de personnages, accessoires, combats et sauvegardes
