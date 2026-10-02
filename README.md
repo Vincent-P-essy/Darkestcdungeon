@@ -4,11 +4,14 @@ Jeu vidéo en C où des personnages s'affrontent en tour par tour jusqu'à attei
 
 Voir rapport PDF pour plus de détails .
 
-## Execution preview
 
-![Darkestcdungeon execution](docs/screenshots/execution.png)
+## Gameplay
 
-Local execution of `./game`. The input and output shown come from the repository example or test fixtures. [Verification](docs/verification.md).
+![Sélection de l’équipe et début du combat](docs/screenshots/combat-start.png)
+
+![Actions des personnages pendant un combat](docs/screenshots/combat-turn.png)
+
+Captures du jeu C exécuté dans un terminal, après création d’une partie et sélection de deux combattants.
 
 ##  Fonctionnalités
 
@@ -42,16 +45,16 @@ make
 Ou manuellement :
 
 ```bash
-gcc main.c combat.c character.c accessory.c save_load.c -o darkestdungeon
+gcc main.c combat.c character.c accessory.c save_load.c -o game
 ```
 
 ##  Lancement
 
 ```bash
-./darkestdungeon
+./game
 ```
 
-> Assure-toi d’avoir les droits d’exécution ou fais `chmod +x darkestdungeon`.
+> Assure-toi d’avoir les droits d’exécution ou fais `chmod +x game`.
 
 ##  Rapport
 
