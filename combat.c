@@ -3,6 +3,8 @@
 #include <time.h>
 #include "combat.h"
 #include "accessory.h"
+#include "character.h"
+#include "dungeon.h"
 
 // Fonction pour obtenir un nombre aléatoire entre 0.8 et 1.2
 float get_random_roll()
@@ -17,13 +19,14 @@ int calculate_damage(int attack, int defense)
     int base_damage = attack - defense;
     if (base_damage <= 0)
         return 1;
-    return (int)(base_damage * roll);
+    int damage = (int)(base_damage * roll);
+    return damage > 0 ? damage : 1;
 }
 
 // Fonction pour appliquer un soin
 void apply_healing(Character *target, int healing)
 {
-    if (!target)
+    if (!target || target->HP <= 0 || healing <= 0)
         return;
     int max_hp = target->class.HPmax +
                  (target->acc1 ? target->acc1->HPbonus : 0) +
@@ -37,7 +40,7 @@ void apply_healing(Character *target, int healing)
 // Fonction pour appliquer des dégâts
 void apply_damage(Character *target, int damage)
 {
-    if (!target || target->HP <= 0)
+    if (!target || target->HP <= 0 || damage <= 0)
         return;
     target->HP -= damage;
     if (target->HP < 0)
@@ -175,6 +178,7 @@ void perform_enemy_action(Enemy *enemy, Character *fighters)
 
         float roll = get_random_roll();
         int stress_damage = (int)((enemy->attstrenn - stress_red) * roll);
+        if (stress_damage < 0) stress_damage = 0;
 
         apply_stress(current, stress_damage, 0);
 
@@ -188,156 +192,85 @@ void perform_enemy_action(Enemy *enemy, Character *fighters)
     }
 }
 
-// Fonction pour démarrer un combat
-void start_combat(GameState *state, Enemy *enemy)
-{
-    printf("\nCombat contre %s (niveau %d)\n", enemy->name, enemy->level);
-    printf("Points de vie: %d\n", enemy->HPenn);
-
+void start_combat(GameState *state, Enemy *enemy) {
+    if (!state || !enemy || !state->fighting_characters) return;
     int turn = 1;
-
-    while (!is_all_dead(state->fighting_characters) && enemy->HPenn > 0)
-    {
-        printf("\n=== Tour %d ===\n", turn);
-
-        // Afficher état des combattants
+    while (!is_all_dead(state->fighting_characters) &&
+           !is_all_stressed(state->fighting_characters) && enemy->HPenn > 0) {
+        printf("\n=== Tour %d : %s (%d PV) ===\n", turn, enemy->name, enemy->HPenn);
         Character *current = state->fighting_characters;
-        while (current)
-        {
-            if (current->HP > 0)
-            {
-                printf("%s: %d HP, %d stress\n",
-                       current->name, current->HP, current->stress);
-            }
-            current = current->next;
-        }
-
-        // Tour des personnages
-        current = state->fighting_characters;
-        while (current)
-        {
-            if (current->HP > 0 && current->stress < 100)
-            {
-                printf("\nAction de %s (A:Attaque, D:Defense, R:Restauration): ",
-                       current->name);
-                char action;
-                scanf(" %c", &action);
-
-                switch (action)
-                {
-                case 'A':
-                case 'a':
-                {
-                    int att_total = current->class.att +
-                                    (current->acc1 ? current->acc1->attbonus : 0) +
-                                    (current->acc2 ? current->acc2->attbonus : 0);
-
-                    int damage = calculate_damage(att_total, enemy->defenn);
-                    enemy->HPenn -= damage;
-                    printf("%s inflige %d degats a l'ennemi!\n",
-                           current->name, damage);
-                    break;
-                }
-                case 'D':
-                case 'd':
-                    current->is_defending = 1;
-                    printf("%s se met en position defensive.\n", current->name);
-                    break;
-                case 'R':
-                case 'r':
-                {
-                    int healing = current->class.rest +
-                                  (current->acc1 ? current->acc1->restbonus : 0) +
-                                  (current->acc2 ? current->acc2->restbonus : 0);
-
-                    Character *target = select_healing_target(state->fighting_characters);
-                    if (target)
-                    {
-                        apply_healing(target, healing);
-                        printf("%s soigne %s pour %d points de vie.\n",
-                               current->name, target->name, healing);
+        while (current && enemy->HPenn > 0) {
+            if (current->HP > 0 && current->stress < 100) {
+                display_character(current);
+                char line[64], message[256], action;
+                int accepted = 0;
+                while (!accepted) {
+                    printf("Action de %s (A:Attaque, D:Defense, R:Restauration): ", current->name);
+                    if (!fgets(line, sizeof(line), stdin)) {
+                        end_combat(state, 0);
+                        return;
                     }
-                    break;
-                }
+                    if (sscanf(line, " %c", &action) != 1) continue;
+                    Character *target = NULL;
+                    if (action == 'R' || action == 'r') {
+                        int index;
+                        printf("Cible du soin (numero dans l'equipe): ");
+                        if (!fgets(line, sizeof(line), stdin)) { end_combat(state, 0); return; }
+                        if (sscanf(line, "%d", &index) == 1 && index > 0) {
+                            target = state->fighting_characters;
+                            for (int i = 1; target && i < index; ++i) target = target->next;
+                        }
+                    }
+                    accepted = perform_player_action(state, enemy, current, action, target,
+                                                       message, sizeof(message));
+                    puts(accepted ? message : "Action ou cible invalide, reessayez.");
                 }
             }
             current = current->next;
         }
-
-        // Réinitialiser les états de défense
-        current = state->fighting_characters;
-        while (current)
-        {
-            current->is_defending = 0;
-            current = current->next;
-        }
-
-        // Vérifier si l'ennemi est mort
-        if (enemy->HPenn <= 0)
-        {
-            printf("\nVictoire! L'ennemi est vaincu!\n");
-            state->gold += 10;
-            end_combat(state, 1);
-            return;
-        }
-
-        // Tour de l'ennemi
-        if (!is_all_dead(state->fighting_characters) &&
-            !is_all_stressed(state->fighting_characters))
-        {
-            perform_enemy_action(enemy, state->fighting_characters);
-        }
-
-        turn++;
+        if (enemy->HPenn <= 0) break;
+        perform_enemy_action(enemy, state->fighting_characters);
+        reset_defense(state->fighting_characters);
+        remove_dead_fighters(state);
+        ++turn;
     }
-
-    // Fin du combat
-    if (is_all_dead(state->fighting_characters))
-    {
-        printf("\nDefaite! Tous vos personnages sont morts!\n");
-        end_combat(state, 0);
-    }
+    int victory = enemy->HPenn <= 0;
+    puts(victory ? "Victoire !" : "Combat perdu ou equipe submergee par le stress.");
+    end_combat(state, victory);
 }
 
-// Fonction pour terminer un combat
-void end_combat(GameState* state, int victory) {
+void end_combat(GameState *state, int victory) {
     if (!state) return;
-
-    // Mettre à jour les compteurs de combat pour les survivants
-    Character* current = state->fighting_characters;
-    while (current) {
-        if (current->HP > 0) {
-            current->nbcomb++;
+    while (state->fighting_characters) {
+        Character *c = state->fighting_characters;
+        state->fighting_characters = remove_character_from_list(state->fighting_characters, c);
+        if (c->HP <= 0) {
+            free_character_list(c);
+            continue;
         }
-        current = current->next;
+        ++c->nbcomb;
+        c->is_defending = 0;
+        state->available_characters = add_character_to_list(state->available_characters, c);
+        unequip_accessory(state, c, 1);
+        unequip_accessory(state, c, 2);
     }
-    
-    // Gérer les accessoires et personnages morts
-    current = state->fighting_characters;
-    while (current) {
-        if (current->HP <= 0) {
-            // Détruire les accessoires des morts
-            if (current->acc1) {
-                free(current->acc1);
-                current->acc1 = NULL;
-            }
-            if (current->acc2) {
-                free(current->acc2);
-                current->acc2 = NULL;
-            }
-        } else {
-            // Si victoire, conserver les accessoires pour la prochaine fois
-            if (victory) {
-                if (current->acc1) {
-                    state->available_accessories = add_accessory_to_list(state->available_accessories, current->acc1);
-                    current->acc1 = NULL;
-                }
-                if (current->acc2) {
-                    state->available_accessories = add_accessory_to_list(state->available_accessories, current->acc2);
-                    current->acc2 = NULL;
-                }
-            }
-        }
-        current = current->next;
+    for (Character *c = state->sanitarium_characters; c; c = c->next) apply_healing(c, 7);
+    for (Character *c = state->tavern_characters; c; c = c->next) {
+        c->stress -= 25;
+        if (c->stress < 0) c->stress = 0;
     }
+    if (!victory) return;
+    int level = state->current_level;
+    state->gold += 10;
+    char name[50];
+    snprintf(name, sizeof(name), "Relique du niveau %d", level);
+    Accessory *loot = create_accessory(name, level + 1, level / 2, level, level / 3, level);
+    state->available_accessories = add_accessory_to_list(state->available_accessories, loot);
+    const char *names[] = {"William", "Tardif", "Alhazred", "Dismas"};
+    const ClassType classes[] = {CLASS_MAITRE_CHIEN, CLASS_CHASSEUR_DE_PRIMES, CLASS_VESTALE, CLASS_FURIE};
+    if (level % 2 == 0 && level >= 2 && level <= 8) {
+        Character *recruit = create_character(names[level / 2 - 1], classes[level / 2 - 1]);
+        state->available_characters = add_character_to_list(state->available_characters, recruit);
+    }
+    ++state->current_level;
 }

@@ -5,6 +5,7 @@
 
 // Créer un nouvel accessoire
 Accessory* create_accessory(const char* name, int attbonus, int defbonus, int HPbonus, int restbonus, int strred) {
+    if (!name || attbonus < 0 || defbonus < 0 || HPbonus < 0 || restbonus < 0 || strred < 0) return NULL;
     Accessory* new_acc = malloc(sizeof(Accessory));
     if (!new_acc) return NULL;
     
@@ -15,6 +16,7 @@ Accessory* create_accessory(const char* name, int attbonus, int defbonus, int HP
     new_acc->HPbonus = HPbonus;
     new_acc->restbonus = restbonus;
     new_acc->strred = strred;
+    new_acc->price = 0;
     new_acc->next = NULL;
     
     return new_acc;

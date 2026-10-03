@@ -1,0 +1,6 @@
+*.o
+game
+game-gui
+tests/test-gameplay
+*.dcd
+*.dcd.tmp

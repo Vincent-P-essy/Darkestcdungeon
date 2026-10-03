@@ -24,6 +24,7 @@ const char* get_class_name(ClassType type) {
 
 // Créer un nouveau personnage
 Character* create_character(const char* name, ClassType class_type) {
+    if (!name || class_type < CLASS_FURIE || class_type > CLASS_MAITRE_CHIEN) return NULL;
     Character* new_char = malloc(sizeof(Character));
     if (!new_char) return NULL;
     
