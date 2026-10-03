@@ -44,7 +44,7 @@ gcc -Wall -Wextra -Werror -std=c99 main.c combat.c character.c accessory.c save_
 
 ### Version graphique
 
-Prérequis supplémentaires : [MLV 3.x](https://www-igm.univ-mlv.fr/~boussica/mlv/index.html), son module `pkg-config`, une session graphique et la police DejaVu Sans. La disponibilité des paquets MLV dépend de la distribution ; suivre les instructions de la bibliothèque si elle n'est pas dans ses dépôts.
+Prérequis supplémentaires : [MLV](https://www-igm.univ-mlv.fr/~boussica/mlv/index.html), son module `pkg-config`, une session graphique et la police DejaVu Sans. La compilation et le gameplay ont également été vérifiés avec MLV 2.0.2. La disponibilité des paquets MLV dépend de la distribution ; suivre les instructions de la bibliothèque si elle n'est pas dans ses dépôts.
 
 ```bash
 pkg-config --modversion MLV
